@@ -14,6 +14,8 @@ and [implementation record](docs/implementation-notes.md) for the current state.
 The [review closeout](docs/review-closeout.md) records verifier fixes, the preserved
 measured source and two deferred limitations. Original and post-review acceptance
 outputs are retained separately under `docs/evidence/`.
+The reviewed implementation is integrated into local `main`; see
+[local integration](docs/local-integration.md) for merged-source verification and preservation.
 
 ## Local setup
 

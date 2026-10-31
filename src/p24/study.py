@@ -250,7 +250,7 @@ def _encoder_stage(
     validate_adaptation(worker)
     result["fit"] = worker
     if purpose == "feasibility":
-        train, _ = read_training(root / "freeze")
+        train = read_split(root / "freeze", "train")
         projection = (
             3 * math.ceil(len(train.rows) / 16) * parent.elapsed_seconds / parent.completed_steps
         )
@@ -343,6 +343,7 @@ def run_stage(stage: str, config: Path, root: Path) -> dict:
         "readback",
         "serve-check",
         "report",
+        "enrich",
     }
     if stage not in allowed:
         raise ValueError("Unknown explicit study stage")
@@ -351,6 +352,13 @@ def run_stage(stage: str, config: Path, root: Path) -> dict:
         raise ValueError(
             "Actual study root must be this project's owned .local/study; no budget-reset roots"
         )
+    if stage == "enrich":
+        from p24.enrichment import enrich_runs
+
+        try:
+            return enrich_runs(root, PROJECT_ROOT)
+        except (FileNotFoundError, ValueError) as exc:
+            raise StudyNotReady(str(exc)) from exc
     root.mkdir(parents=True, exist_ok=True)
     cfg = read_config(config)
     identity = current_identity(cfg, root)
@@ -498,7 +506,10 @@ def run_worker(config_path: Path, root: Path, purpose: str) -> None:
         raise StudyNotReady("Worker requires a supervising launch claim")
     with claim.with_suffix(".worker-started").open("xb") as marker:
         marker.write(b"worker consumed\n")
-    train, validation = read_training(root / "freeze")
+    if purpose == "feasibility":
+        train, validation = read_split(root / "freeze", "train"), None
+    else:
+        train, validation = read_training(root / "freeze")
     folder = root / "attempts" / purpose
     receipt = fit_encoder(
         train,

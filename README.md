@@ -11,8 +11,9 @@ including worker initialization/saving, with **553.5 MiB** sampled process-tree 
 The small six-intent, one-seed study supports no general quality claim. See the approved design/plan under
 `docs/superpowers/`, [study report](docs/study-report.md), [model card](docs/model-card.md)
 and [implementation record](docs/implementation-notes.md) for the current state.
-The [review closeout](docs/review-closeout.md) records verifier fixes, the preserved
-measured source and two deferred limitations. Original and post-review acceptance
+The [review closeout](docs/review-closeout.md) records verifier fixes and the preserved
+measured source. The [publication follow-up](docs/publication-followup.md) addresses
+both formerly deferred software items. Original and post-review acceptance
 outputs are retained separately under `docs/evidence/`.
 The reviewed implementation is integrated into local `main`; see
 [local integration](docs/local-integration.md) for merged-source verification and preservation.
@@ -72,6 +73,7 @@ uv run --frozen --no-sync p24 evaluate
 uv run --frozen --no-sync p24 readback
 uv run --frozen --no-sync p24 serve-check
 uv run --frozen --no-sync p24 report
+uv run --frozen --no-sync p24 enrich
 uv run --frozen --no-sync python scripts/acceptance.py --root .local/study
 ```
 
@@ -81,6 +83,13 @@ length64, full encoder/head updates and final-epoch selection are fixed. No auto
 retry, search, paid fallback or score-based continuation. Test inference happens once
 for both arms on identical frozen rows; a worse encoder is a valid outcome. Recompute
 metrics/report from retained predictions without refitting or rerunning test inference.
+
+`p24 enrich` is a separate metadata-only closeout operation for the existing local
+MLflow runs. It validates the recorded historical source/config/freeze and run identities,
+logs provenance/config/environment, validation history and evaluation links, and leaves
+claims, model weights, predictions, reports and original receipts untouched. Repeating
+it does not duplicate validation metric points. It requires retained completed-run
+metadata; a fresh checkout has no local study to enrich. It does not grant a new run.
 
 ## Saved-model API
 
@@ -99,7 +108,9 @@ process after use. `serve-check` demonstrates and stops two actual server proces
 
 Raw/prepared messages, weights, baseline binary, MLflow and original receipts stay
 ignored under `.local/`. Source/aggregate evidence only; no public model/dataset release,
-hosted CI, paid provider, cloud deployment or CV/profile editing is part of this scope.
+paid provider, cloud deployment or CV/profile editing is part of this scope. Source and
+safe report publication plus software-only hosted CI were explicitly authorized on
+1 November 2026. CI uses independent fixtures; it does not reproduce the real study.
 Input attribution and licence limits are in [ATTRIBUTION.md](ATTRIBUTION.md).
 
 Acquisition uses existing PowerShell 7 with normal Windows HTTPS certificate verification

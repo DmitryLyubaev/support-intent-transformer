@@ -19,6 +19,7 @@ def main(argv=None) -> int:
             "readback",
             "serve-check",
             "report",
+            "enrich",
             "_worker",
         ],
     )

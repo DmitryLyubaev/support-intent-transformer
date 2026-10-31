@@ -66,3 +66,82 @@ def test_modified_pinned_input_is_rejected_before_fitting(tmp_path):
     (tmp_path / "sources" / receipt["files"][0]["path"]).write_bytes(b"modified")
     with pytest.raises(SourceError, match="digest"):
         study._snapshot_valid(tmp_path, IDENTITY)
+
+
+@pytest.mark.parametrize("purpose", ["feasibility", "measured"])
+def test_worker_only_opens_the_splits_its_purpose_uses(
+    tmp_path, monkeypatch, rows, config, purpose
+):
+    from p24 import data, encoder
+
+    root = tmp_path / ".local/study"
+    frozen = data.prepare(rows, config, {})
+    data.write_freeze(frozen, root)
+    write_json(root / "attempts" / f"{purpose}.claim.json", {"identity": asdict(IDENTITY)})
+    (root / "attempts" / f"{purpose}.claim.launched").write_bytes(b"fixture launch")
+    monkeypatch.setattr(study, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(study, "current_identity", lambda *args: IDENTITY)
+    monkeypatch.setattr(study, "read_config", lambda *args: config)
+    actual_reader = data.read_split
+    opened = []
+
+    def guarded_reader(path, name):
+        if name == "test" or (purpose == "feasibility" and name == "validation"):
+            raise AssertionError(f"Unexpected {name} access during {purpose}")
+        opened.append(name)
+        return actual_reader(path, name)
+
+    def fit(train, validation, *args):
+        assert train.rows == frozen.train.rows
+        assert (validation is None) == (purpose == "feasibility")
+        return {"fixture_only": True}
+
+    monkeypatch.setattr(data, "read_split", guarded_reader)
+    monkeypatch.setattr(study, "read_split", guarded_reader)
+    monkeypatch.setattr(encoder, "fit_encoder", fit)
+    study.run_worker(tmp_path / "config.json", root, purpose)
+    assert opened == (["train"] if purpose == "feasibility" else ["train", "validation"])
+
+
+def test_feasibility_projection_never_opens_validation(tmp_path, monkeypatch, rows, config):
+    from p24 import attempts, data, tracking
+    from p24.contracts import AttemptReceipt
+
+    frozen = data.prepare(rows, config, {})
+    data.write_freeze(frozen, tmp_path)
+    write_json(tmp_path / "baseline.json", {"identity": asdict(IDENTITY), "status": "succeeded"})
+    staged = tmp_path / "attempts/feasibility/staged"
+    staged.mkdir(parents=True)
+    (staged / "model.safetensors").write_bytes(b"fixture discard only")
+    write_json(
+        staged.parent / "worker-receipt.json",
+        {
+            "encoder_changes": [
+                {"layer": 0, "max_abs_delta": 0.1},
+                {"layer": 1, "max_abs_delta": 0.1},
+            ]
+        },
+    )
+    monkeypatch.setattr(
+        attempts,
+        "supervise",
+        lambda *args: AttemptReceipt("feasibility", "succeeded", 50, 10, 100, staged, IDENTITY),
+    )
+    monkeypatch.setattr(tracking, "log_run", lambda *args: "fixture-run")
+    actual_reader = data.read_split
+    opened = []
+
+    def guarded_reader(path, name):
+        if name != "train":
+            raise AssertionError(f"Unexpected {name} access for projection")
+        opened.append(name)
+        return actual_reader(path, name)
+
+    monkeypatch.setattr(data, "read_split", guarded_reader)
+    monkeypatch.setattr(study, "read_split", guarded_reader)
+    result = study._encoder_stage(
+        tmp_path, tmp_path / "config.json", config, IDENTITY, "feasibility"
+    )
+    assert result["gate_passed"] is True
+    assert opened == ["train"]
+    assert not (staged / "model.safetensors").exists()

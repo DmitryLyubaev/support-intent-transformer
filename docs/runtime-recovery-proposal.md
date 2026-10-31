@@ -1,6 +1,13 @@
 # Native runtime recovery proposal - 31 October 2026
 
-Status: proposed, not approved or executed. Task 1 is incomplete at its native import gate.
+Status: approved by Dmitry on 31 October 2026. Recovery preparation is underway;
+Task 1 remains incomplete until native imports and canonical checks pass.
+
+Execution capacity: resumed free-RAM samples were 5.09, 5.80, 5.67, 5.17, 5.23 and
+4.68 GiB, all below the approved >=6 GiB setup threshold. Download/extraction/new-venv
+creation has therefore not begun. Approval remains valid; no further recovery approval
+is needed when host capacity is available. The private containment/hash-check extraction
+script is prepared under .local/ and the original interpreter/environment are untouched.
 
 ## Observation
 

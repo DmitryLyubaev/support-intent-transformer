@@ -54,3 +54,12 @@ All models exercised so far were tiny local random fixtures, not actual adaptati
 3. Split demonstration, read-only acceptance and report rendering into focused modules,
    retaining the stage interfaces and source-row reader contract. Cost: cross-module
    drift could overstate evidence; canonical checks, A1-A8 and final review must check it.
+
+4. Python Requests rejected the public source certificate while Windows' normal HTTPS
+   client successfully fetched the same pinned README (13,049 bytes, SHA-256
+   f3786a5327fd6533c7c0ff3ff654e20ee3d1261d2fa41667381f59a2e42364e1).
+   Use the existing PowerShell 7 verified HTTPS client for identical pinned URLs, with
+   no TLS/security/global trust changes or account credentials. Cost: transport differences
+   could alter bytes; record hashes and check against official pinned file metadata.
+   Preserve/archive the failed acquisition snapshot; it contains no data files or actual
+   experiment claims, so no fit/evaluation allowance is reset.

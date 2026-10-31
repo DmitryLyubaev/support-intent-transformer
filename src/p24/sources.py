@@ -1,5 +1,9 @@
+import os
+import shutil
+import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from p24.config import StudyConfig
 from p24.contracts import Row
@@ -21,6 +25,35 @@ INPUTS = (
 
 class SourceError(ValueError):
     pass
+
+
+NATIVE_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "download_source.ps1"
+
+
+def native_download(url: str, destination: Path) -> None:
+    parsed = urlsplit(url)
+    if parsed.scheme != "https" or parsed.hostname != "huggingface.co" or parsed.username:
+        raise SourceError("Download requires the approved HTTPS origin")
+    runner = shutil.which("pwsh")
+    if runner is None:
+        raise SourceError("Native verified HTTPS transport requires existing PowerShell 7")
+    subprocess.run(
+        [
+            runner,
+            "-NoProfile",
+            "-NonInteractive",
+            "-File",
+            str(NATIVE_SCRIPT),
+            "-Uri",
+            url,
+            "-OutputPath",
+            str(destination.resolve()),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
+    )
 
 
 def verify_source_receipts(config: StudyConfig, root: Path) -> dict:
@@ -69,21 +102,10 @@ def fetch_sources(config: StudyConfig, root: Path, transport=None) -> dict:
         destination = cache / kind / filename
         destination.parent.mkdir(parents=True, exist_ok=True)
         if transport is None:
-            from huggingface_hub import hf_hub_download
-
-            source = Path(
-                hf_hub_download(
-                    repo,
-                    filename,
-                    repo_type="dataset" if kind == "dataset" else "model",
-                    revision=revision,
-                    token=False,
-                    cache_dir=str(root / "hub-cache"),
-                )
+            native_download(
+                f"https://huggingface.co/{'datasets/' if kind == 'dataset' else ''}{repo}/resolve/{revision}/{filename}",
+                destination.with_suffix(destination.suffix + ".tmp"),
             )
-            import shutil
-
-            shutil.copyfile(source, destination.with_suffix(destination.suffix + ".tmp"))
         else:
             destination.with_suffix(destination.suffix + ".tmp").write_bytes(
                 transport(repo, revision, filename, kind)

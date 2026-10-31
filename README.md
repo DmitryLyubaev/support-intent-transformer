@@ -93,3 +93,8 @@ Raw/prepared messages, weights, baseline binary, MLflow and original receipts st
 ignored under `.local/`. Source/aggregate evidence only; no public model/dataset release,
 hosted CI, paid provider, cloud deployment or CV/profile editing is part of this scope.
 Input attribution and licence limits are in [ATTRIBUTION.md](ATTRIBUTION.md).
+
+Acquisition uses existing PowerShell 7 with normal Windows HTTPS certificate verification
+for the exact pinned Hugging Face URLs. Python Requests failed its certificate-chain
+check here; the failed pre-input snapshot is retained privately. No TLS verification,
+certificate store, account credentials or global security configuration was changed.

@@ -33,7 +33,10 @@ def now() -> str:
 
 def source_map() -> dict:
     files = [
-        p for folder in ("src", "scripts", "tests") for p in (PROJECT_ROOT / folder).rglob("*.py")
+        p
+        for folder in ("src", "scripts", "tests")
+        for p in (PROJECT_ROOT / folder).rglob("*")
+        if p.suffix in (".py", ".ps1")
     ]
     files += [PROJECT_ROOT / name for name in ("pyproject.toml", "uv.lock", "config/study.json")]
     return {p.relative_to(PROJECT_ROOT).as_posix(): digest_file(p) for p in sorted(files)}

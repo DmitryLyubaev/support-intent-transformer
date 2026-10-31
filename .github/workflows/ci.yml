@@ -1,0 +1,88 @@
+name: Software checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: software-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: windows-2025
+    timeout-minutes: 20
+    env:
+      UV_PROJECT_ENVIRONMENT: .venv
+      HF_HUB_OFFLINE: "1"
+      HF_DATASETS_OFFLINE: "1"
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      PYTEST_ADDOPTS: --junitxml=.local/ci/junit.xml
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.10.7"
+          enable-cache: false
+      - name: Install the validated native Python runtime
+        run: |
+          New-Item -ItemType Directory -Path .local/runtime,.local/ci | Out-Null
+          $archive = Join-Path $PWD '.local/cpython-3.12.16.tar.gz'
+          $uri = 'https://github.com/astral-sh/python-build-standalone/releases/download/20261026/cpython-3.12.16%2B20261026-x86_64-pc-windows-msvc-install_only.tar.gz'
+          Invoke-WebRequest -Uri $uri -OutFile $archive
+          if ((Get-Item -LiteralPath $archive).Length -ne 47113364) { throw 'Runtime archive size mismatch' }
+          $sha = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($sha -ne '590dfcbe3a34c07301e6332e13e2188b98655cd072b08afa45a7998dc4c22bc5') { throw 'Runtime archive digest mismatch' }
+          # These exact bytes were inspected for extraction containment in the local study.
+          tar -xzf $archive -C .local/runtime
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          uv venv .venv --python .local/runtime/python/python.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          uv sync --locked --native-tls --link-mode=copy
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Canonical offline software checks
+        run: uv run --frozen --no-sync python scripts/check.py
+      - name: Record source and software result
+        if: always()
+        run: |
+          if (!(Test-Path -LiteralPath '.local/ci/junit.xml')) { throw 'No completed software test receipt' }
+          [xml]$junit = Get-Content -LiteralPath '.local/ci/junit.xml' -Raw
+          $suites = @($junit.testsuites.testsuite)
+          $tests = ($suites | Measure-Object -Property tests -Sum).Sum
+          $failures = ($suites | Measure-Object -Property failures -Sum).Sum
+          $errors = ($suites | Measure-Object -Property errors -Sum).Sum
+          $skips = ($suites | Measure-Object -Property skipped -Sum).Sum
+          $studyPresent = Test-Path -LiteralPath '.local/study'
+          [ordered]@{
+            schema_version = 1
+            source_commit = (git rev-parse HEAD)
+            workflow_source_commit = $env:GITHUB_SHA
+            python = (uv run --frozen --no-sync python --version)
+            tests = [int]$tests
+            failures = [int]$failures
+            errors = [int]$errors
+            skipped = [int]$skips
+            actual_study_root_present = $studyPresent
+            scope = 'Software fixtures only; no actual training, data acquisition or held-out inference'
+          } | ConvertTo-Json | Set-Content -LiteralPath '.local/ci/result.json' -Encoding utf8
+          if ($tests -le 0 -or $failures -ne 0 -or $errors -ne 0 -or $skips -ne 0 -or $studyPresent) { throw 'Software receipt failed its completion checks' }
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: always()
+        with:
+          name: software-results
+          path: |
+            .local/ci/junit.xml
+            .local/ci/result.json
+          if-no-files-found: warn
+          retention-days: 14

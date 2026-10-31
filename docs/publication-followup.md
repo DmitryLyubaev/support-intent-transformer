@@ -72,7 +72,23 @@ inspected the single aggregate image. This is not an exhaustive semantic PII gua
 9. Treat pattern/exact-message audits as bounded checks. Cost if wrong: unknown
    identifying strings are not ruled out by a semantic privacy proof.
 
-Publication and actual hosted results will be recorded after their exact-commit checks.
+## Public result
+
+Published at [DmitryLyubaev/support-intent-transformer](https://github.com/DmitryLyubaev/support-intent-transformer).
+Secret scanning and push protection were enabled and read back. Anonymous access to
+the pinned README, original report, model card and plot returned HTTP200.
+
+After the fixture correction below, [hosted run41244171219](https://github.com/DmitryLyubaev/support-intent-transformer/actions/runs/41244171219)
+passed on exact source `5301ee701dec42b14437bf70645fbd6e1e3b1b32`:94 tests, zero
+failures/errors/skips, Python3.12.16, actual-study-root flag false. Source SHA and
+test counts agreed between the downloaded JSON receipt, JUnit and GitHub run metadata.
+Pytest took144.846s in one hosted Windows sample; this is not a service/model benchmark.
+The [safe receipt](evidence/hosted-software-result.json) records the original JUnit hash.
+Post-repair native checks also passed94 tests with the same two existing warnings
+(pytest115.34s). Final A1-A8 readback passed again with all155 original evidence entries
+unchanged. Original measured source/model/metrics and both old environment snapshots
+remain retained privately. Both formerly deferred software items are resolved; the
+review found no new Minor findings. Later documentation commits use the same CI workflow.
 
 ## First hosted run and fixture portability fix
 
@@ -87,5 +103,5 @@ The same failure was reproduced locally under `core.autocrlf=true`; inspection s
 LF and executes its temporary Git commands under that normalization policy so local
 tests cover the hosted condition. All15 acceptance fixtures passed under the forced
 policy. This changes test setup only; the production byte-identity verifier is unchanged.
-Original study results and failed hosted evidence remain retained. Hosted confirmation
-of the repair is pending the next exact-source run.
+Original study results and failed hosted evidence remain retained. The successful
+exact-source hosted run above confirms the repair without weakening the verifier.

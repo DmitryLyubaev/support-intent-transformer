@@ -1,5 +1,6 @@
 .local/
 .venv/
+.venv-*/
 .worktrees/
 .superpowers/
 __pycache__/

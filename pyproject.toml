@@ -1,0 +1,40 @@
+[project]
+name = "support-intent-transformer"
+version = "0.1.0"
+description = "Bounded six-intent CPU transformer adaptation study"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "torch>=2.6,<3", "transformers>=4.48,<5", "datasets>=3,<5",
+  "safetensors>=0.5,<1", "scikit-learn>=1.5,<2", "numpy>=1.26,<3",
+  "mlflow>=3,<4", "fastapi>=0.115,<1", "pydantic>=2,<3",
+  "uvicorn>=0.30,<1", "psutil>=6,<8", "httpx>=0.28,<1",
+]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "ruff>=0.9,<1"]
+
+[project.scripts]
+p24 = "p24.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/p24"]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

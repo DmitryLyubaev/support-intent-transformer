@@ -1,18 +1,94 @@
+import json
+import re
+import subprocess
+from dataclasses import asdict
 from pathlib import Path
 
 from p24.config import LABELS, read_config
 from p24.contracts import Prediction
 from p24.data import prepare, read_split, read_training
-from p24.io import canonical, digest_file, read_json
+from p24.io import canonical, digest_bytes, digest_file, read_json
 from p24.sources import read_source_rows
+
+
+def _recorded_snapshot(root: Path, project_root: Path) -> dict:
+    """Anchor historical measured bytes independently of later verifier changes."""
+    metadata = read_json(root / "study.json")
+    if metadata.get("origin") != "actual_public_inputs":
+        raise ValueError("Synthetic fixture is not actual provenance")
+    commit = metadata["source_commit"]
+    if not isinstance(commit, str) or not re.fullmatch(r"[0-9a-f]{40}", commit):
+        raise ValueError("Invalid measured source commit")
+    names = subprocess.run(
+        ["git", "ls-tree", "-r", "--name-only", commit],
+        cwd=project_root,
+        capture_output=True,
+        check=True,
+        text=True,
+    ).stdout.splitlines()
+    expected = {
+        name
+        for name in names
+        if (
+            name.startswith(("src/", "scripts/", "tests/")) and Path(name).suffix in (".py", ".ps1")
+        )
+        or name in ("pyproject.toml", "uv.lock", "config/study.json")
+    }
+    files = metadata["source_files"]
+    if set(files) != expected or not {"pyproject.toml", "uv.lock", "config/study.json"} <= expected:
+        raise ValueError("Measured source inventory differs from preserved Git snapshot")
+    contents = {}
+    for name in sorted(expected):
+        contents[name] = subprocess.run(
+            ["git", "show", f"{commit}:{name}"],
+            cwd=project_root,
+            capture_output=True,
+            check=True,
+        ).stdout
+        if digest_bytes(contents[name]) != files[name]:
+            raise ValueError("Measured source bytes differ from preserved Git snapshot")
+    config = asdict(read_config(root / "config.json"))
+    if canonical(json.loads(contents["config/study.json"])) != canonical(config):
+        raise ValueError("Recorded config differs from measured source config")
+    fields = {
+        "source_hash": digest_bytes(canonical(files)),
+        "lock_hash": files["uv.lock"],
+        "config_hash": digest_bytes(canonical(config)),
+    }
+    if any(metadata["identity"].get(k) != v for k, v in fields.items()):
+        raise ValueError("Recorded source/config/lock identity is inconsistent")
+    frozen = read_json(root / "freeze/manifest.json")
+    return {"source_commit": commit, "identity": {**fields, "freeze_id": frozen["identity"]}}
 
 
 def verify_acceptance(root, project_root: Path):
     root = Path(root)
     cases = {}
+    snapshot = None
+
+    def identity():
+        nonlocal snapshot
+        if snapshot is None:
+            snapshot = _recorded_snapshot(root, project_root)
+        return snapshot["identity"]
+
+    def record(relative):
+        result = read_json(root / relative)
+        if result.get("identity") != identity():
+            raise ValueError(f"Measured study lineage differs: {relative}")
+        return result
+
+    def selected_model():
+        from p24.bundle import verify_bundle
+
+        training = record("training.json")
+        if training["model_id"] != verify_bundle(root / "model").model_id:
+            raise ValueError("Selected model identity differs from measured receipt")
+        return training["model_id"]
 
     def check(case, operation):
         try:
+            identity()
             detail = operation()
             cases[case] = {"status": "PASS", "detail": detail}
         except FileNotFoundError:
@@ -43,13 +119,34 @@ def verify_acceptance(root, project_root: Path):
         ):
             raise ValueError("Evidence check failed")
         review = read_json(root / "selection-review.json")
-        if not (review["accepted"] and review["reviewer_kind"] == "assistant"):
+        preparation = record("preparation.json")
+        train, _ = read_training(root / "freeze")
+        sample = [
+            r.row_id
+            for label in LABELS
+            for r in sorted((r for r in train.rows if r.label == label), key=lambda r: r.row_id)[
+                :10
+            ]
+        ]
+        if not (
+            review["accepted"] is True
+            and review["reviewer_kind"] == "assistant"
+            and review["candidate_identity"] == identity()["freeze_id"]
+            and len(review["sample_row_ids"]) == len(sample)
+            and set(review["sample_row_ids"]) == set(sample)
+            and preparation["status"] == "frozen"
+        ):
             raise ValueError("Evidence check failed")
         return "Seven pinned file receipts, licences and recorded assistant sample review"
 
     def split_check():
         cfg = read_config(root / "config.json")
+        preparation = record("preparation.json")
         splits = [read_split(root / "freeze", name) for name in ("train", "validation", "test")]
+        if preparation["counts"] != {
+            name: s.manifest["counts"] for name, s in zip(("train", "validation", "test"), splits)
+        }:
+            raise ValueError("Preparation counts differ from frozen splits")
         group_sets = [set(s.manifest["groups"].values()) for s in splits]
         if (
             group_sets[0] & group_sets[1]
@@ -81,7 +178,10 @@ def verify_acceptance(root, project_root: Path):
         return {name: len(s.rows) for name, s in zip(("train", "validation", "test"), splits)}
 
     def baseline_check():
-        receipt = read_json(root / "baseline.json")
+        receipt = record("baseline.json")
+        record("baseline.claim.json")
+        if receipt["status"] != "succeeded":
+            raise ValueError("Baseline did not succeed")
         import joblib
 
         from p24.data import normalize
@@ -104,14 +204,26 @@ def verify_acceptance(root, project_root: Path):
         return {"training_count": len(train.rows), "vocabulary_size": details["vocabulary_size"]}
 
     def adaptation():
-        training = read_json(root / "training.json")
+        training = record("training.json")
+        selected_model()
         from safetensors.torch import load_file
 
         from p24.encoder import _tensor_digest, validate_adaptation
 
         worker = training["fit"]
-        parent = read_json(root / "attempts/measured.receipt.json")
-        feasibility = read_json(root / "feasibility.json")
+        parent = record("attempts/measured.receipt.json")
+        feasibility = record("feasibility.json")
+        for purpose, receipt in (("feasibility", feasibility), ("measured", training)):
+            claim = record(f"attempts/{purpose}.claim.json")
+            supervised = record(f"attempts/{purpose}.receipt.json")
+            saved_worker = record(f"attempts/{purpose}/worker-receipt.json")
+            if claim["purpose"] != purpose or canonical(saved_worker) != canonical(receipt["fit"]):
+                raise ValueError("Attempt claim/worker differs from measured record")
+            if any(supervised[k] != receipt[k] for k in supervised):
+                raise ValueError("Attempt parent differs from measured record")
+            for marker in ("launched", "worker-started"):
+                if not (root / f"attempts/{purpose}.claim.{marker}").is_file():
+                    raise FileNotFoundError("Required durable launch marker is absent")
         if not (parent["status"] == "succeeded" and parent["elapsed_seconds"] <= 3600):
             raise ValueError("Evidence check failed")
         if not (parent["peak_rss_bytes"] <= 4 * 1024**3 and feasibility["gate_passed"]):
@@ -145,7 +257,8 @@ def verify_acceptance(root, project_root: Path):
         }
 
     def evaluation():
-        result = read_json(root / "evaluation.json")
+        result = record("evaluation.json")
+        claim = record("evaluation.claim.json")
         from p24.metrics import compare
         from p24.study import quality_report_valid
 
@@ -153,7 +266,10 @@ def verify_acceptance(root, project_root: Path):
             raise ValueError("Evidence check failed")
         if not digest_file(root / "metrics.json") == result["metrics_sha256"]:
             raise ValueError("Evidence check failed")
-        predictions = read_json(root / "predictions.json")
+        predictions = record("predictions.json")
+        model_id = selected_model()
+        if any(r.get("model_id") != model_id for r in (result, claim, predictions)):
+            raise ValueError("Evaluation claim/predictions/model identities differ")
         rows = read_split(root / "freeze", "test").rows
         rebuilt = compare(
             rows,
@@ -171,31 +287,38 @@ def verify_acceptance(root, project_root: Path):
         }
 
     def lineage():
-        receipt = read_json(root / "readback.json")
+        receipt = record("readback.json")
+        if receipt["model_id"] != selected_model():
+            raise ValueError("Readback refers to a different measured model")
         from p24.bundle import verify_bundle
-        from p24.tracking import _client
+        from p24.tracking import read_run
 
         original = verify_bundle(root / "model")
         downloaded = verify_bundle(root / receipt["download_path"])
         if not original.model_id == downloaded.model_id == receipt["model_id"]:
             raise ValueError("Evidence check failed")
-        run = _client(root / "mlflow").get_run(receipt["run_id"])
-        if not (run.info.status == "FINISHED" and run.data.tags["purpose"] == "measured"):
-            raise ValueError("Evidence check failed")
-        if not all(
-            (
-                run.data.tags[k] == v
-                for k, v in read_json(root / "training.json")["identity"].items()
-            )
+        if receipt["run_id"] != record("training.json")["mlflow_run_id"]:
+            raise ValueError("Readback refers to a different measured MLflow run")
+        for purpose, name in (
+            ("baseline", "baseline"),
+            ("feasibility", "feasibility"),
+            ("measured", "training"),
         ):
+            saved = record(f"{name}.json")
+            run = read_run(root / "mlflow", saved["mlflow_run_id"])
+            if not (run["status"] == "FINISHED" and run["tags"]["purpose"] == purpose):
+                raise ValueError("MLflow run purpose/status differs from measured study")
+            if any(run["tags"].get(k) != v for k, v in identity().items()):
+                raise ValueError("MLflow run lineage differs from measured study")
+        if not receipt["run_id"]:
             raise ValueError("Evidence check failed")
         return {"model_id": original.model_id, "mlflow_run_id": receipt["run_id"]}
 
     def serving():
-        receipt = read_json(root / "serving.json")
+        receipt = record("serving.json")
         from p24.bundle import verify_bundle
 
-        if not receipt["model_id"] == verify_bundle(root / "model").model_id:
+        if not receipt["model_id"] == verify_bundle(root / "model").model_id == selected_model():
             raise ValueError("Evidence check failed")
         if not (
             receipt["route_tokens_match"]
@@ -213,12 +336,16 @@ def verify_acceptance(root, project_root: Path):
 
     def finish():
         receipt = read_json(root / "report.json")
+        if receipt["model_id"] != selected_model():
+            raise ValueError("Report refers to a different measured model")
         if not receipt["metrics_sha256"] == digest_file(root / "metrics.json"):
             raise ValueError("Evidence check failed")
+        if set(receipt["documents"]) != {"docs/study-report.md", "docs/model-card.md"}:
+            raise ValueError("Report document inventory differs")
         for path, expected in receipt["documents"].items():
             if not digest_file(project_root / path) == expected:
                 raise ValueError("Evidence check failed")
-        if not read_json(root / "serving.json")["processes"][-1]["stopped"]:
+        if not record("serving.json")["processes"][-1]["stopped"]:
             raise ValueError("Evidence check failed")
         return "Source-bound report/model card and preserved artifacts; owned API stopped"
 
@@ -227,8 +354,12 @@ def verify_acceptance(root, project_root: Path):
         (provenance, split_check, baseline_check, adaptation, evaluation, lineage, serving, finish),
     ):
         check(case, operation)
+    from p24.study import source_map
+
     return {
         "schema_version": 1,
+        "measured_snapshot": snapshot,
+        "verifier_source_hash": digest_bytes(canonical(source_map())),
         "cases": cases,
         "complete": all(c["status"] == "PASS" for c in cases.values()),
     }

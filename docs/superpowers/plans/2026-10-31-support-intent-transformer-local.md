@@ -11,7 +11,7 @@
 **Spec:** [Approved design](../specs/2026-10-31-support-intent-transformer-design.md), approved by Dmitry on 31 October 2026. Read the design and this plan together.
 
 Status: approved by Dmitry on 31 October 2026; recommended Native execution accepted.
-All six tasks are implemented and the bounded actual study has finished. Canonical checks passed 65 tests; A1-A8 passed. The final independent whole-branch review is next. Measured executable source remains 4dc18f9; reporting commits do not repeat training or test inference.
+All six tasks and one independent whole-branch review are complete. Three Important verifier gaps were fixed in one RED/GREEN pass; two Minors are deferred in docs/review-closeout.md. Final canonical87 PASS and corrected actual A1-A8 PASS without changing155 evidence entries. Measured executable remains4dc18f9; verifier changes do not repeat training/test inference. Integration choice is pending.
 
 ## Global Constraints
 

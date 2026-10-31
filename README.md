@@ -11,6 +11,9 @@ including worker initialization/saving, with **553.5 MiB** sampled process-tree 
 The small six-intent, one-seed study supports no general quality claim. See the approved design/plan under
 `docs/superpowers/`, [study report](docs/study-report.md), [model card](docs/model-card.md)
 and [implementation record](docs/implementation-notes.md) for the current state.
+The [review closeout](docs/review-closeout.md) records verifier fixes, the preserved
+measured source and two deferred limitations. Original and post-review acceptance
+outputs are retained separately under `docs/evidence/`.
 
 ## Local setup
 

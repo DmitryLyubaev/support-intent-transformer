@@ -67,9 +67,43 @@ def verify_source_receipts(config: StudyConfig, root: Path) -> dict:
     if not receipt_path.is_file():
         raise SourceError("Existing source cache lacks complete receipt; retain it")
     receipt = read_json(receipt_path)
+    if type(receipt.get("schema_version")) is not int or receipt["schema_version"] != 1:
+        raise SourceError("Unsupported source receipt schema")
+    required = {
+        "kind",
+        "repo",
+        "revision",
+        "filename",
+        "path",
+        "url",
+        "retrieved_at",
+        "sha256",
+        "size",
+    }
+    if not isinstance(receipt.get("files"), list) or any(
+        not isinstance(entry, dict) or set(entry) != required for entry in receipt["files"]
+    ):
+        raise SourceError("Source provenance fields are incomplete")
     if [(f["kind"], f["repo"], f["revision"], f["filename"]) for f in receipt["files"]] != expected:
         raise SourceError("Source receipt identity mismatch")
     for entry in receipt["files"]:
+        url = f"https://huggingface.co/{'datasets/' if entry['kind'] == 'dataset' else ''}{entry['repo']}/resolve/{entry['revision']}/{entry['filename']}"
+        if entry["url"] != url:
+            raise SourceError("Source provenance URL differs from pinned input")
+        try:
+            timestamp = datetime.fromisoformat(entry["retrieved_at"])
+            if timestamp.tzinfo is None or timestamp.utcoffset().total_seconds() != 0:
+                raise ValueError("Not UTC")
+        except (TypeError, ValueError, AttributeError) as exc:
+            raise SourceError("Source retrieval timestamp must be parseable UTC") from exc
+        if (
+            not isinstance(entry["path"], str)
+            or type(entry["size"]) is not int
+            or entry["size"] <= 0
+            or not isinstance(entry["sha256"], str)
+            or len(entry["sha256"]) != 64
+        ):
+            raise SourceError("Source provenance size/hash/path is invalid")
         path = cache / entry["path"]
         if (
             entry["path"] != f"{entry['kind']}/{entry['filename']}"
@@ -129,15 +163,17 @@ def fetch_sources(config: StudyConfig, root: Path, transport=None) -> dict:
 
 
 def read_source_rows(root: Path) -> list[Row]:
-    from datasets import load_dataset
+    import json
+
+    from pyarrow import parquet
 
     result = []
     for split in ("train", "test"):
         path = root / "sources" / "dataset" / f"data/{split}-00000-of-00001.parquet"
-        dataset = load_dataset(
-            "parquet", data_files=str(path), split="train", cache_dir=str(root / "dataset-cache")
-        )
-        labels = dataset.features["label"].names
+        source = parquet.ParquetFile(path)
+        metadata = json.loads(source.schema_arrow.metadata[b"huggingface"])
+        labels = metadata["info"]["features"]["label"]["names"]
+        dataset = source.read(columns=["text", "label"]).to_pylist()
         result.extend(
             (
                 Row(f"{split}:{i:06}", split, labels[int(row["label"])], row["text"])

@@ -45,3 +45,39 @@ def test_source_receipt_cannot_reference_a_file_outside_its_cache(tmp_path, conf
     write_json(tmp_path / "sources/receipt.json", receipt)
     with pytest.raises(SourceError, match="path|inventory"):
         fetch_sources(config, tmp_path)
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("url", None),
+        ("url", "https://example.org/changed-source"),
+        ("retrieved_at", None),
+        ("retrieved_at", "not-a-timestamp"),
+        ("retrieved_at", "2026-10-31T08:00:00"),
+        ("retrieved_at", "2026-10-31T08:00:00+10:00"),
+    ],
+)
+def test_incomplete_or_invalid_provenance_cannot_pass_cached_source_gate(
+    tmp_path, config, field, value
+):
+    from p24.io import write_json
+
+    receipt = fetch_sources(config, tmp_path, lambda *args: b"fixture input")
+    if value is None:
+        del receipt["files"][0][field]
+    else:
+        receipt["files"][0][field] = value
+    write_json(tmp_path / "sources/receipt.json", receipt)
+    with pytest.raises(SourceError, match="provenance|timestamp|URL"):
+        fetch_sources(config, tmp_path)
+
+
+def test_unknown_source_receipt_schema_is_rejected(tmp_path, config):
+    from p24.io import write_json
+
+    receipt = fetch_sources(config, tmp_path, lambda *args: b"fixture input")
+    receipt["schema_version"] = 999
+    write_json(tmp_path / "sources/receipt.json", receipt)
+    with pytest.raises(SourceError, match="schema"):
+        fetch_sources(config, tmp_path)

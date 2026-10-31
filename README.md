@@ -1,5 +1,7 @@
 # Support intent transformer
 
+[![Software checks](https://github.com/DmitryLyubaev/support-intent-transformer/actions/workflows/ci.yml/badge.svg)](https://github.com/DmitryLyubaev/support-intent-transformer/actions/workflows/ci.yml)
+
 A bounded six-intent CPU fine-tuning study: TF-IDF/logistic regression versus full
 adaptation of a small pretrained BERT encoder, local MLflow lineage and saved-model
 FastAPI serving. This is a personal portfolio demonstration, not production support.

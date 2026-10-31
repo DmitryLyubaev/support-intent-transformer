@@ -73,3 +73,19 @@ inspected the single aggregate image. This is not an exhaustive semantic PII gua
    identifying strings are not ruled out by a semantic privacy proof.
 
 Publication and actual hosted results will be recorded after their exact-commit checks.
+
+## First hosted run and fixture portability fix
+
+The first public Windows run, [41243550628](https://github.com/DmitryLyubaev/support-intent-transformer/actions/runs/41243550628)
+on `26735dc`, failed with83 passed/11 failed tests. Its source-bound JUnit/result artifact
+is preserved. All failures came from one temporary Git fixture: Windows text writing
+created CRLF bytes, then the runner's Git line-ending normalization committed LF bytes.
+The fixture's pre-commit byte hash consequently disagreed with its Git snapshot.
+
+The same failure was reproduced locally under `core.autocrlf=true`; inspection showed
+23 working bytes versus22 Git bytes for the fixture source. The test now writes explicit
+LF and executes its temporary Git commands under that normalization policy so local
+tests cover the hosted condition. All15 acceptance fixtures passed under the forced
+policy. This changes test setup only; the production byte-identity verifier is unchanged.
+Original study results and failed hosted evidence remain retained. Hosted confirmation
+of the repair is pending the next exact-source run.

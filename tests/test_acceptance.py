@@ -22,7 +22,9 @@ def recorded_study(tmp_path, tiny_base):
     project = tmp_path / "fixture-project"
     root = project / ".local/study"
     (project / "src").mkdir(parents=True)
-    (project / "src/fixture.py").write_text("# independent fixture\n", encoding="utf-8")
+    (project / "src/fixture.py").write_text(
+        "# independent fixture\n", encoding="utf-8", newline="\n"
+    )
     (project / "uv.lock").write_bytes(b"fixture lock\n")
     (project / "pyproject.toml").write_bytes(b"[project]\n")
     config = StudyConfig()
@@ -44,7 +46,12 @@ def recorded_study(tmp_path, tiny_base):
             "fixture",
         ],
     ):
-        subprocess.run(["git", *args], cwd=project, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "-c", "core.autocrlf=true", *args],
+            cwd=project,
+            check=True,
+            capture_output=True,
+        )
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=project, text=True).strip()
     rows = [
         Row(

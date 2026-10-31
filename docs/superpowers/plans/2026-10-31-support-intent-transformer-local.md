@@ -10,8 +10,8 @@
 
 **Spec:** [Approved design](../specs/2026-10-31-support-intent-transformer-design.md), approved by Dmitry on 31 October 2026. Read the design and this plan together.
 
-Status: written and self-reviewed; awaiting plan review and execution-method choice.
-No implementation, package installation, data/weight acquisition or training has started.
+Status: approved by Dmitry on 31 October 2026; recommended Native execution accepted.
+Tasks 1-5 are complete. Task 6 software gates are under verification; actual study has not started.
 
 ## Global Constraints
 
@@ -82,14 +82,14 @@ settings; `fetch_sources(config: StudyConfig, root: Path) -> dict` returns recei
 `StudyConfig` contains exactly the design settings and input revisions, with actual-run
 validation rejecting fixture-only overrides.
 
-- [ ] **Step 1 - establish the project-owned environment.** At execution time, confirm the
+- [x] **Step 1 - establish the project-owned environment.** At execution time, confirm the
   target absent, resources available and personal identity; initialize the repository,
   baseline commit and isolated branch/worktree through using-git-worktrees. Resolve
   compatible stable versions into `uv.lock`, map torch explicitly to the official CPU
   wheel index and install only in the owned environment. Include psutil for watchdog RSS,
   Uvicorn for real HTTP and httpx for tests. Verify Python 3.12, imports and an actual CPU
   tensor operation. Preserve failed resolution/install receipts; stop on incompatibility.
-- [ ] **Step 2 - write failing source/split tests.** Define
+- [x] **Step 2 - write failing source/split tests.** Define
   `test_duplicate_chain_with_conflicting_labels_is_excluded`,
   `test_test_component_never_enters_train_or_validation`,
   `test_whole_groups_caps_and_minimums`,
@@ -112,17 +112,17 @@ validation rejecting fixture-only overrides.
   never call the actual Hub in software tests. Run
   `uv run --frozen --no-sync pytest tests/test_sources.py tests/test_data.py -q` and
   observe the missing implementation/behavior failures before implementation.
-- [ ] **Step 3 - implement preparation.** Fetch only the design's pinned files through
+- [x] **Step 3 - implement preparation.** Fetch only the design's pinned files through
   ordinary Hub downloads into temporary owned paths, atomically finalize complete
   size/hash/time receipts, and refuse an unreceipted/conflicting cache. Implement the
   exact connected-component/split algorithm. Privacy scan flags plus local dispositions
   cannot alter labels; missing/uncertain dispositions exclude flagged rows. Keep raw
   text private and safe manifests text-free. Training loader receives train/validation
   manifests only; detect modification of a frozen file/config on read.
-- [ ] **Step 4 - verify.** Run the Task 1 tests and canonical command; expected all pass,
+- [x] **Step 4 - verify.** Run the Task 1 tests and canonical command; expected all pass,
   no network/data download, no study claim and no generated text under tracked paths.
   Check `.local/` is ignored and record resolved versions/import/resource outcomes.
-- [ ] **Step 5 - commit.** Stage only Task 1's named product files and commit
+- [x] **Step 5 - commit.** Stage only Task 1's named product files and commit
   `feat: freeze pinned support-intent inputs and grouped splits`. Update planner tracker/
   handover with actual evidence; do not claim real acquisition or dataset acceptance yet.
 
@@ -136,7 +136,7 @@ validation rejecting fixture-only overrides.
 `compare(rows: Sequence[Row], baseline: Sequence[Prediction], encoder: Sequence[Prediction]) -> dict`;
 `error_sample(rows: Sequence[Row], predictions: Sequence[Prediction]) -> tuple[str, ...]`.
 
-- [ ] **Step 1 - write failing tests.** `test_baseline_vocabulary_uses_only_training`
+- [x] **Step 1 - write failing tests.** `test_baseline_vocabulary_uses_only_training`
   asserts an independent `validationonly` token never enters the fitted vocabulary.
   `test_metrics_include_all_six_labels` uses one reference per label and predictions
   `[0, 0, 2, 3, 4, 5]`, asserting macro-F1 `pytest.approx(7 / 9)`, accuracy
@@ -144,16 +144,16 @@ validation rejecting fixture-only overrides.
   `test_pairing_rejects_duplicate_missing_or_extra_ids` requires rejection before
   comparison; shuffled valid predictions must pair by immutable ID.
   `test_error_sample_is_lowest_two_ids_per_class` pins deterministic selection.
-- [ ] **Step 2 - observe RED.** Run
+- [x] **Step 2 - observe RED.** Run
   `uv run --frozen --no-sync pytest tests/test_baseline.py tests/test_metrics.py -q`;
   expected failure for missing behavior, not a broken fixture/environment.
-- [ ] **Step 3 - implement the fixed pipeline/evaluator.** Preserve label order, use
+- [x] **Step 3 - implement the fixed pipeline/evaluator.** Preserve label order, use
   zero_division=0 and exact ID-set checks. Treat convergence warnings as an unsuccessful
   baseline run, preserve receipt and stop the real study; do not increase iterations.
   Persist only trusted project-generated baseline data locally, with digest/versions.
-- [ ] **Step 4 - verify GREEN.** Run Task 2 tests and canonical checks; confirm a deliberately
+- [x] **Step 4 - verify GREEN.** Run Task 2 tests and canonical checks; confirm a deliberately
   worse encoder comparison is reported numerically and is not an acceptance failure.
-- [ ] **Step 5 - commit.** Commit named files as
+- [x] **Step 5 - commit.** Commit named files as
   `feat: compare training-only baseline with paired six-label metrics`.
 
 ### Task 3: Actual encoder adaptation with durable attempt and resource bounds
@@ -167,7 +167,7 @@ validation rejecting fixture-only overrides.
 The worker saves a staged model/tokenizer and tensor-change receipt; Task 4 seals the
 bundle. No MLflow service or final-test path is needed by the worker.
 
-- [ ] **Step 1 - write failing tests.** A tiny locally initialized two-layer BERT/vocabulary
+- [x] **Step 1 - write failing tests.** A tiny locally initialized two-layer BERT/vocabulary
   fixture trains one optimizer step and asserts a nonzero max-absolute delta for one
   attention/feed-forward tensor in each layer, all parameters trainable and finite loss.
   `test_fresh_run_reloads_base_not_feasibility_weights` checks initialization digests.
@@ -176,10 +176,10 @@ bundle. No MLflow service or final-test path is needed by the worker.
   launches owned disposable children, uses a short fixture deadline, asserts terminal
   timeout receipt plus no owned children, and leaves an unrelated sentinel alive.
   An injected sampler tests RSS failure; a real sampler test observes nonzero process RSS.
-- [ ] **Step 2 - observe RED.** Run
+- [x] **Step 2 - observe RED.** Run
   `uv run --frozen --no-sync pytest tests/test_encoder.py tests/test_attempts.py -q`.
   No real source downloads/pretrained training or actual study claims are allowed here.
-- [ ] **Step 3 - implement worker and supervisor.** Use the exact approved recipe, final
+- [x] **Step 3 - implement worker and supervisor.** Use the exact approved recipe, final
   epoch selection, logged per-epoch validation and canonical contiguous CPU tensor
   digests/deltas. Exclusive fixed-purpose claim markers under `.local/study/attempts/`
   are written/fsynced before spawning; an existing marker is never cleared for resume.
@@ -188,14 +188,14 @@ bundle. No MLflow service or final-test path is needed by the worker.
   polls RSS at <=5 seconds, bounds training/validation/staging writes and terminates only
   its process tree on ceiling/failure. Require normal child exit and complete receipt
   before marking success. Partial staged files remain diagnostic, never selected.
-- [ ] **Step 4 - verify GREEN.** Run tests plus canonical checks. Test timeout, nonzero
+- [x] **Step 4 - verify GREEN.** Run tests plus canonical checks. Test timeout, nonzero
   child exit, nonfinite loss, head-only change and missing terminal receipt as failures.
   Feasibility uses at most the first 128 sorted training IDs, cycles only those rows for
   at most 50 steps, and never loads validation/test. Its conservative projection is
   `3 * ceil(train_count / 16) * elapsed_seconds / completed_steps`, including observed
   startup overhead; require completed steps >0, normal completion, finite loss, both
   layer deltas and projection <=2,700 seconds before measured launch is enabled.
-- [ ] **Step 5 - commit.** Commit named files as
+- [x] **Step 5 - commit.** Commit named files as
   `feat: bound encoder adaptation with durable attempts and owned watchdog`.
 
 ### Task 4: Verified saved bundles and local MLflow lineage
@@ -209,25 +209,25 @@ bundle. No MLflow service or final-test path is needed by the worker.
 `log_run(root: Path, purpose: str, identity: RunIdentity, receipt: Mapping[str, object], artifacts: Sequence[Path]) -> str`;
 `download_bundle(root: Path, run_id: str, destination: Path) -> BundleIdentity`.
 
-- [ ] **Step 1 - write failing tests.** For a locally initialized fixture bundle assert
+- [x] **Step 1 - write failing tests.** For a locally initialized fixture bundle assert
   `verify_bundle(original).model_id == verify_bundle(relocated).model_id` and equal
   inference after reload. Mutating `vocab.txt`, model weights, labels or saved truncation
   settings must fail verification before model loading; missing files must fail too.
   `test_mlflow_download_matches_original` logs to temporary SQLite/artifacts and asserts
   every downloaded digest/model_id equals the original. Do not use autologging/network.
-- [ ] **Step 2 - observe RED.** Run
+- [x] **Step 2 - observe RED.** Run
   `uv run --frozen --no-sync pytest tests/test_bundle.py tests/test_tracking.py -q`.
-- [ ] **Step 3 - implement identity/tracking.** Save actual safetensors/model/tokenizer
+- [x] **Step 3 - implement identity/tracking.** Save actual safetensors/model/tokenizer
   settings plus label mapping. Canonical JSON uses UTF-8, sorted keys, compact separators,
   finite values and no absolute paths; manifest covers relative files/digests/sizes and
   excludes itself. Verify exactly the expected file inventory before loading. Derive
   model_id from the manifest map, labels and inference settings as specified, independent
   of directory or report metadata. Explicit MLflow run-purpose/status/tags capture source,
   lock/config/freeze hashes, input provenance, seed/runtime/RSS/metrics and artifact links.
-- [ ] **Step 4 - verify GREEN.** Run Task 4 and canonical checks. Repeat bundle readback
+- [x] **Step 4 - verify GREEN.** Run Task 4 and canonical checks. Repeat bundle readback
   with Hub networking unavailable, without requiring a running MLflow server. Compare
   local downloaded bytes, not only MLflow metadata or a logged path.
-- [ ] **Step 5 - commit.** Commit named files as
+- [x] **Step 5 - commit.** Commit named files as
   `feat: retain verified model bundles and local experiment lineage`.
 
 ### Task 5: Strict local saved-model API and actual process restart
@@ -239,7 +239,7 @@ local loader. `GET /health -> {"status": "ready", "model_id": str}`;
 `POST /predict` accepts exactly `{"text": str}` and returns
 `{"label": str, "model_id": str, "truncated": bool}`.
 
-- [ ] **Step 1 - write failing tests.** Assert numeric/null text, extra keys, malformed
+- [x] **Step 1 - write failing tests.** Assert numeric/null text, extra keys, malformed
   JSON, whitespace-only, empty and 2,049 raw characters produce 4xx. A valid 2,048-character
   case succeeds and returns the required keys without a confidence field. With the
   fixture tokenizer assert 62 content tokens plus specials are untruncated, 63 content
@@ -247,16 +247,16 @@ local loader. `GET /health -> {"status": "ready", "model_id": str}`;
   whitespace and compare offline/HTTP labels using the exact normalized token IDs.
   `test_actual_process_restart_retains_identity` starts Uvicorn on an owned free test
   port, calls HTTP, stops/waits, restarts and compares model_id/labels with no Hub access.
-- [ ] **Step 2 - observe RED.** Run
+- [x] **Step 2 - observe RED.** Run
   `uv run --frozen --no-sync pytest tests/test_api.py tests/test_api_process.py -q`.
-- [ ] **Step 3 - implement the minimal app.** Strict Pydantic input, saved NFC/strip and
+- [x] **Step 3 - implement the minimal app.** Strict Pydantic input, saved NFC/strip and
   tokenization policy, local verified startup, evaluation mode and no gradients. Compute
   truncation from pre-truncation token count including specials. Highest-logit ties choose
   lowest label index. No request-time acquisition, MLflow lookup or extra prediction mode.
-- [ ] **Step 4 - verify GREEN.** Run Task 5 and canonical checks; include failed startup
+- [x] **Step 4 - verify GREEN.** Run Task 5 and canonical checks; include failed startup
   with missing/tampered bundle. Inspect real process cleanup and retained fixture evidence.
   Tests use isolated free ports, never steal an existing listener on 8024.
-- [ ] **Step 5 - commit.** Commit named files as
+- [x] **Step 5 - commit.** Commit named files as
   `feat: serve verified support-intent artifacts with restart parity`.
 
 ### Task 6: One explicit real-data study and bounded acceptance closeout
@@ -341,5 +341,5 @@ Recommend **Native execution**: six tasks share frozen-data, receipt and bundle 
 and the real study is necessarily sequential. One implementer plus one fresh whole-branch
 review keeps this demonstration bounded. Subagent-driven execution is the alternative:
 fresh implementer/reviewer per task plus final review, with higher context/review cost.
-Execution method has not been selected. Follow the applicable execution skill only after
-Dmitry reviews this plan and chooses the method; no implementation has occurred here.
+Native execution is underway following explicit plan approval; the original handoff was:
+review the plan and choose the method before implementation.

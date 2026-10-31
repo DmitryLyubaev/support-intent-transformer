@@ -166,6 +166,10 @@ def fit_encoder(
         "training_truncated": sum(
             len(tokenizer(normalize(r.text))["input_ids"]) > config.length for r in train.rows
         ),
+        "validation_truncated": sum(
+            len(tokenizer(normalize(r.text))["input_ids"]) > config.length
+            for r in (validation.rows if validation is not None else ())
+        ),
     }
     validate_adaptation(receipt)
     output.mkdir(parents=True)

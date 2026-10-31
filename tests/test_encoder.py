@@ -85,3 +85,31 @@ def test_head_only_change_is_rejected():
                 ]
             }
         )
+
+
+def test_training_and_validation_truncation_counts_are_separate(tiny_base, tmp_path):
+    train = PreparedSplit(
+        (
+            Row("train:000000", "train", LABELS[0], "hello " * 20),
+            Row("train:000001", "train", LABELS[1], "card"),
+        ),
+        {},
+    )
+    validation = PreparedSplit(
+        (
+            Row("train:000002", "train", LABELS[0], "card " * 20),
+            Row("train:000003", "train", LABELS[1], "hello " * 20),
+        ),
+        {},
+    )
+    result = fit_encoder(
+        train,
+        validation,
+        tiny_base,
+        tmp_path / "truncated",
+        replace(StudyConfig(), epochs=1, batch_size=2, length=16),
+        "measured",
+        lambda event: None,
+    )
+    assert result["training_truncated"] == 1
+    assert result.get("validation_truncated") == 2

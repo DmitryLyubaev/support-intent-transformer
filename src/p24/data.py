@@ -38,7 +38,9 @@ def prepare(rows: list[Row], config: StudyConfig, dispositions: dict[str, str]) 
             exclusions["outside_labels"].append(row.row_id)
         elif not isinstance(row.text, str) or not normalize(row.text):
             exclusions["invalid_text"].append(row.row_id)
-        elif privacy_flag(row.text) and dispositions.get(row.row_id) != "clear_nonidentifying":
+        elif dispositions.get(row.row_id) == "exclude_identifying" or (
+            privacy_flag(row.text) and dispositions.get(row.row_id) != "clear_nonidentifying"
+        ):
             exclusions["privacy"].append(row.row_id)
         else:
             accepted.append(row)

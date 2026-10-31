@@ -26,3 +26,22 @@ def test_complete_acquisition_receipts_include_hash_size_and_time(tmp_path, conf
     target.write_bytes(b"changed")
     with pytest.raises(SourceError, match="digest"):
         fetch_sources(config, tmp_path, transport)
+
+
+def test_source_receipt_cannot_reference_a_file_outside_its_cache(tmp_path, config):
+    import hashlib
+
+    from p24.io import write_json
+
+    receipt = fetch_sources(config, tmp_path, lambda *args: b"fixture input")
+    outside = tmp_path / "outside.txt"
+    outside.write_bytes(b"not a pinned source")
+    entry = receipt["files"][0]
+    entry.update(
+        path="../outside.txt",
+        sha256=hashlib.sha256(outside.read_bytes()).hexdigest(),
+        size=outside.stat().st_size,
+    )
+    write_json(tmp_path / "sources/receipt.json", receipt)
+    with pytest.raises(SourceError, match="path|inventory"):
+        fetch_sources(config, tmp_path)

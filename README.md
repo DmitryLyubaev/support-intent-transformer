@@ -4,8 +4,11 @@ A bounded six-intent CPU fine-tuning study: TF-IDF/logistic regression versus fu
 adaptation of a small pretrained BERT encoder, local MLflow lineage and saved-model
 FastAPI serving. This is a personal portfolio demonstration, not production support.
 
-Current status: Tasks 1-5 verified; final-stage software and actual study are in progress.
-No actual model-quality result is claimed yet. See the approved design/plan under
+Measured 31 October 2026: baseline macro-F1 **0.8960**, BERT-Tiny **0.4668**, on the
+same **239 frozen test rows**. One fixed CPU recipe fully updated both encoder layers;
+the baseline performed better. Training completed three epochs in **25.968 seconds**
+including worker initialization/saving, with **553.5 MiB** sampled process-tree peak RSS.
+The small six-intent, one-seed study supports no general quality claim. See the approved design/plan under
 `docs/superpowers/`, [study report](docs/study-report.md), [model card](docs/model-card.md)
 and [implementation record](docs/implementation-notes.md) for the current state.
 

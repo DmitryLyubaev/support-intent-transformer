@@ -11,7 +11,7 @@
 **Spec:** [Approved design](../specs/2026-10-31-support-intent-transformer-design.md), approved by Dmitry on 31 October 2026. Read the design and this plan together.
 
 Status: approved by Dmitry on 31 October 2026; recommended Native execution accepted.
-Tasks 1-5 are complete. Task 6 software gates are under verification; actual study has not started.
+All six tasks are implemented and the bounded actual study has finished. Canonical checks passed 65 tests; A1-A8 passed. The final independent whole-branch review is next. Measured executable source remains 4dc18f9; reporting commits do not repeat training or test inference.
 
 ## Global Constraints
 
@@ -272,15 +272,15 @@ explicit stages `acquire`, `prepare`, `baseline`, `feasibility`, `train`, `evalu
 or study stages. `verify_acceptance(root: Path) -> dict` returns A1-A8 outcomes with
 source/identity-bound evidence paths and explicit FAIL/NOT_RUN, never guessed PASS.
 
-- [ ] **Step 1 - write failing orchestration tests.** With fixtures assert final test
+- [x] **Step 1 - write failing orchestration tests.** With fixtures assert final test
   is inaccessible before a completed measured receipt/frozen bundle; a second actual
   evaluation claim or changed model/config/freeze is refused without replacing results.
   Missing A4/A6/A7 receipts must produce NOT_RUN/FAIL, not a complete report. Assert an
   inferior encoder still completes if all mechanical evidence passes; seeded synthetic
   runs remain labeled software checks, never actual pretrained quality evidence.
-- [ ] **Step 2 - observe RED.** Run
+- [x] **Step 2 - observe RED.** Run
   `uv run --frozen --no-sync pytest tests/test_study.py tests/test_acceptance.py -q`.
-- [ ] **Step 3 - implement orchestration and verify software GREEN.** Define p24 CLI
+- [x] **Step 3 - implement orchestration and verify software GREEN.** Define p24 CLI
   stages with config/root arguments and ownership checks. Reuse earlier interfaces;
   keep prepare freezes, actual attempt claims and evaluation claim durable and separate.
   Record baseline attempt once, require its success before feasibility, and refuse study
@@ -290,35 +290,35 @@ source/identity-bound evidence paths and explicit FAIL/NOT_RUN, never guessed PA
   `feat: orchestrate the bounded transformer study and evidence gates`, then verify clean
   source and capture its commit plus tracked-input hashes. Reporting-only later commits
   retain the measured executable/config identity; no favorable silent rerun.
-- [ ] **Step 4 - acquire and freeze actual inputs.** Recheck host capacity/ownership and
+- [x] **Step 4 - acquire and freeze actual inputs.** Recheck host capacity/ownership and
   coordinate CPU/RAM use; record current samples. Run
   `uv run --frozen --no-sync p24 acquire --config config/study.json --root .local/study`,
   inspect actual licence/source/hash/time receipts, then run the corresponding `prepare`
   stage. Resolve privacy flags locally or exclude them, freeze manifests/exclusions/counts,
   and verify A1/A2 before model fitting. Stop on failed counts/provenance. No parameters
   may be changed based on these failures without an explicitly recorded design revision.
-- [ ] **Step 5 - fit the baseline once.** Run the `baseline` stage with the same arguments;
+- [x] **Step 5 - fit the baseline once.** Run the `baseline` stage with the same arguments;
   retain actual pipeline digest, training-only vocabulary evidence, local MLflow run and
   convergence outcome. It must not read/score final test. Stop on failure, preserving data.
-- [ ] **Step 6 - run one feasibility attempt.** Run `feasibility` once. Inspect the actual
+- [x] **Step 6 - run one feasibility attempt.** Run `feasibility` once. Inspect the actual
   claim/receipt, finite loss, encoder changes, steps/time/RSS and <=45-minute projection.
   A missing/failed receipt stops the study. Diagnostic fixture corrections do not clear
   or recreate the consumed actual slot. Do not continue automatically after a failure.
-- [ ] **Step 7 - run one fresh measured fit.** If the feasibility gate passes, run `train`
+- [x] **Step 7 - run one fresh measured fit.** If the feasibility gate passes, run `train`
   once under the external watchdog. Verify fresh pinned-base initialization, three full
   epochs, final-epoch selection, both-layer deltas and bounded runtime/RSS. Seal and log
   the complete artifact; partial weights do not enter final-test evaluation. Retain all
   receipts and failures; do not refit to improve validation performance.
-- [ ] **Step 8 - evaluate both arms once.** Run `evaluate` only after source/config/freeze/
+- [x] **Step 8 - evaluate both arms once.** Run `evaluate` only after source/config/freeze/
   final-bundle identities are fixed. Write the paired prediction files and six-label
   metrics, counts/confusion/errors and truncation counts; preserve results without tuning.
   Independently recompute metrics from those same saved prediction files and verify exact
   IDs, counts and numerical agreement. This readback does not perform test inference again.
-- [ ] **Step 9 - demonstrate artifact/HTTP readback.** Run `readback` for a real MLflow
+- [x] **Step 9 - demonstrate artifact/HTTP readback.** Run `readback` for a real MLflow
   download/hash check, then `serve-check` for actual selected-bundle offline/HTTP parity
   on independently authored examples and API stop/restart at owned 127.0.0.1:8024. Verify
   rejected inputs and stable model_id/labels without network. No second fit/test study.
-- [ ] **Step 10 - close out and commit evidence.** Run `report`, canonical software checks
+- [x] **Step 10 - close out and commit evidence.** Run `report`, canonical software checks
   and `uv run --frozen --no-sync python scripts/acceptance.py --root .local/study`.
   Require A1-A8 actual outcomes with source-bound receipts, not a hardcoded passing count.
   Record actual samples, errors and limitations in the report/model card; inspect safe

@@ -11,7 +11,7 @@ failures. CPU torch 2.15.0+cpu imported and computed 2.0 from a two-element tens
 Datasets 4.8.5 reproducibly aborted native CPython 3.12.11 with an OpenSSL Applink error.
 Independent sklearn/MLflow/FastAPI/PyArrow/ssl imports passed. The full-runtime regression
 failed at that checkpoint, so Task 1 was then incomplete. No dataset rows,
-weights, training, API service or whole-branch review has occurred.
+weights, training, API service or whole-branch review had occurred at that checkpoint.
 
 The setup stop is required by the approved design. A concrete project-local 3.12.16
 recovery proposal preserves the dependency lock, native CPU scope, global interpreter
@@ -40,7 +40,24 @@ no repeated evaluation/lineage reset, no false actual-quality claim from fixture
 manual identifying-record exclusions, separate train/validation truncation counts,
 receipt-path containment, immutable pinned-input checks before fitting, and read-only
 verification even under Python optimization. Read-only checks cannot invoke downloading.
-All models exercised so far were tiny local random fixtures, not actual adaptation.
+At that pre-study checkpoint all exercised models were tiny local random fixtures.
+
+## Actual study
+
+Executable source `4dc18f9b31bb39ff1cd96fd967008a0ecc541284` passed 65 software
+tests before acquisition. All seven downloaded files matched official pinned byte
+hashes. The freeze retained 610 training, 155 validation and 239 test rows. One baseline
+fit, one train-only feasibility attempt and one fresh measured encoder fit succeeded.
+The measured fit completed 117 steps/three epochs in 25.968 seconds including process
+initialization/saving, with 580,382,720 bytes sampled process-tree peak RSS.
+
+One final-test inference per arm produced macro-F1 0.896042 baseline and 0.466797
+encoder. No tuning, relabeling or favorable rerun followed. Both pretrained encoder
+layers changed, while the lost/stolen class had zero encoder recall. See study-report.md
+for full per-class metrics, confusion matrices, fixed-sample error analysis and limits.
+MLflow artifact download verified the identical bundle. Actual HTTP parity/restart
+handled 12 predictions/eight rejections and stopped both owned processes. Raw receipts,
+messages, models and local MLflow remain ignored; safe aggregate evidence is in docs/evidence/.
 
 ## Rulings retained
 

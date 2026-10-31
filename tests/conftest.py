@@ -38,3 +38,48 @@ def rows():
                 text = hashlib.sha256(f"{split}-{label}-{i}".encode()).hexdigest()[:32]
                 result.append(Row(f"{split}:{index:06}", split, label, text))
     return result
+
+
+@pytest.fixture
+def tiny_base(tmp_path):
+    import torch
+    from transformers import BertConfig, BertForSequenceClassification, BertTokenizerFast
+
+    root = tmp_path / "tiny-base"
+    root.mkdir()
+    words = [
+        "[PAD]",
+        "[UNK]",
+        "[CLS]",
+        "[SEP]",
+        "[MASK]",
+        "hello",
+        "card",
+        "lost",
+        "broken",
+        "my",
+        "where",
+        "is",
+        "the",
+        "payment",
+        "arrived",
+        "cafe",
+        "##s",
+    ]
+    (root / "vocab.txt").write_text("\n".join(words), encoding="utf-8")
+    tokenizer = BertTokenizerFast(vocab_file=str(root / "vocab.txt"), do_lower_case=True)
+    tokenizer.save_pretrained(root)
+    torch.manual_seed(123)
+    model = BertForSequenceClassification(
+        BertConfig(
+            vocab_size=len(words),
+            hidden_size=16,
+            num_hidden_layers=2,
+            num_attention_heads=2,
+            intermediate_size=32,
+            max_position_embeddings=128,
+            num_labels=6,
+        )
+    )
+    model.save_pretrained(root, safe_serialization=True)
+    return root

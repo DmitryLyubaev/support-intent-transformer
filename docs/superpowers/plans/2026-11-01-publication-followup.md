@@ -28,18 +28,18 @@
 
 **Files:** src/p24/enrichment.py, study.py, cli.py, tests/test_enrichment.py, tests/test_study.py, README.md, AGENTS.md.
 **Interfaces:** enrich_runs(root:Path, project_root:Path)->dict logs existing bound runs only. `p24 enrich` dispatches separately from source-current fitting gates and performs no study-root creation.
-- [ ] Write failing metadata-only real local MLflow tests for retained config/source/environment/evaluation links, unchanged identity/receipts/status, mismatched-run refusal, and repeated metric deduplication.
-- [ ] Write failing worker and parent-projection fixtures that reject validation/test loading during feasibility while permitting measured validation.
-- [ ] Run focused tests, observe expected failures. Implement minimal fixes. Expected: all focused PASS.
-- [ ] Commit fixes after full canonical check. Expected: lock/lint/format and all fixture tests PASS, no actual claims touched.
+- [x] Write failing metadata-only real local MLflow tests for retained config/source/environment/evaluation links, unchanged identity/receipts/status, mismatched-run refusal, and repeated metric deduplication.
+- [x] Write failing worker and parent-projection fixtures that reject validation/test loading during feasibility while permitting measured validation.
+- [x] Run focused tests, observe expected failures. Implement minimal fixes. Expected: all focused PASS.
+- [x] Commit fixes after full canonical check. Expected: lock/lint/format and all fixture tests PASS, no actual claims touched.
 
 ### Task 2: Publication and CI preparation
 
 **Files:** .github/workflows/ci.yml, README.md, docs/publication-followup.md, safe audit/verification receipt.
-- [ ] Add SHA-pinned checkout/setup-uv/upload-artifact actions and one windows-2025 job. Download only exact known Python runtime bytes, validate size/SHA, extract, create venv, locked sync, then canonical check with JUnit output.
-- [ ] Emit source-bound result JSON and upload only JUnit/receipt. Read-only GitHub token, no credentials persisted, bounded timeout, no deployment or real study commands.
-- [ ] Document retrospective limits and prospective fixes; keep original reports/card unchanged. Run canonical checks and retained-data acceptance through primary evidence read-only, preserving bytes/mtimes. Expected: PASS without fitting/inference.
-- [ ] Commit and obtain one fresh review of this whole follow-up branch. Fix Important/Critical once with RED/GREEN; defer Minor findings.
+- [x] Add SHA-pinned checkout/setup-uv/upload-artifact actions and one windows-2025 job. Download only exact known Python runtime bytes, validate size/SHA, extract, create venv, locked sync, then canonical check with JUnit output.
+- [x] Emit source-bound result JSON and upload only JUnit/receipt. Read-only GitHub token, no credentials persisted, bounded timeout, no deployment or real study commands.
+- [x] Document retrospective limits and prospective fixes; keep original reports/card unchanged. Run canonical checks and retained-data acceptance through primary evidence read-only, preserving bytes/mtimes. Expected: PASS without fitting/inference.
+- [x] Commit and obtain one fresh review of this whole follow-up branch. Fix Important/Critical once with RED/GREEN; defer Minor findings.
 
 ## Publication after review
 
@@ -48,3 +48,5 @@ Integrate locally as already authorized, create the public personal repository w
 scanning/push protection, push main, wait for hosted CI and verify exact-source result.
 Preserve failures honestly and fix software only if needed. Archive owned scratch/logs,
 clean up the follow-up worktree, update tracker/handover/phase5 and push planner updates.
+
+Implementation and one fresh review complete, zero findings. Public creation/push and actual hosted verification are next under the existing authorization.

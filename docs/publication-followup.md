@@ -35,4 +35,41 @@ BANKING77/base weights or invokes an actual study stage. Only JUnit and a source
 software receipt are uploaded. Dataset accuracy remains the unchanged 31 October result:
 baseline macro-F1 0.896042 versus encoder 0.466797 on 239 paired retained test rows.
 
+## Pre-publication verification and review
+
+Native canonical checks passed 94 tests with two existing upstream deprecations
+(pytest114.12s). The actual retained A1-A8 readback passed while all155 original evidence
+entries kept their contents and modification times. No actual enrichment, fitting,
+held-out inference or API demonstration was repeated. One fresh independent review of
+`54079d3..33b73af` found zero Critical, Important or Minor issues and independently passed
+the12 focused tests. No second review was needed.
+
+The pre-publication history audit through `33b73af` covered115 blobs,17commits and70
+tracked files. Selected credential/employer patterns, forbidden private artifact paths
+and exact matches against597 retained message strings of at least40 characters had
+zero findings. All authors/committers were the personal identity. The reviewer also
+inspected the single aggregate image. This is not an exhaustive semantic PII guarantee.
+
+## Follow-up rulings
+
+1. Reuse the ignored Git worktree fallback after the app's earlier source-root rejection.
+   Cost if wrong: the app cannot manage its lifecycle; explicit Git paths are required.
+2. Use the already validated, hashed Python3.12.16 archive in Windows CI because the
+   official actions/python-versions manifest lacks a Windows build of that patch.
+   Cost if wrong: archive availability can block CI; the job must not substitute bytes.
+3. Keep full A1-A8 acceptance separate from metadata enrichment. Cost if wrong: callers
+   must run the independent verifier before treating metadata as complete study evidence.
+4. Target a quiescent local tracking store. Cost if wrong: simultaneous writers can
+   produce partial or conflicting metadata; no multi-writer service is claimed.
+5. Do not add transactional rollback for storage/malformed-metadata logging failures.
+   Cost if wrong: failed enrichment can be partial; original study receipts remain intact.
+6. Preserve acquisition's unfrozen identity; final preparation/run/evaluation bind the
+   final freeze. Cost if wrong: acquisition alone cannot prove final split lineage.
+7. Verify hosted execution, security settings and exact pushed source after publication.
+   Cost if wrong: local software checks cannot substantiate hosted success.
+8. Add no training trial, quality target, production service or stronger dataset-privacy
+   claim. Cost if wrong: the inferior original encoder and bounded guarantees remain.
+9. Treat pattern/exact-message audits as bounded checks. Cost if wrong: unknown
+   identifying strings are not ruled out by a semantic privacy proof.
+
 Publication and actual hosted results will be recorded after their exact-commit checks.

@@ -15,5 +15,11 @@ weights, training, API service or whole-branch review has occurred.
 
 The setup stop is required by the approved design. A concrete project-local 3.12.16
 recovery proposal preserves the dependency lock, native CPU scope, global interpreter
-and TLS/security settings. It has not been executed. Raw receipts remain ignored under
+and TLS/security settings. Dmitry approved it and it subsequently passed. Raw receipts remain ignored under
 .local/evidence/. Preserve the worktree and ledger for resumption.
+
+Recovery: approved archive SHA/size and 3,388 extraction entries verified; new owned
+.venv-31216 uses Python 3.12.16. The uv.lock Git blob stayed
+18b37f8f4bae1e3019bd188c767e3702266cc6ab before/after. Canonical runtime plus source/split
+checks passed 12 tests in 72.40s. Two additional frozen-metadata/digest substitution
+regressions were observed RED then GREEN, closing the manifest readback boundary.

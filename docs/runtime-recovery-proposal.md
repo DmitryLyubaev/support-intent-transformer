@@ -1,13 +1,15 @@
 # Native runtime recovery proposal - 31 October 2026
 
-Status: approved by Dmitry on 31 October 2026. Recovery preparation is underway;
-Task 1 remains incomplete until native imports and canonical checks pass.
+Status: approved and verified on 31 October 2026. Exact approved archive size/SHA and
+3,388 extraction entries passed containment/type checks. Project-local CPython 3.12.16
+and the unchanged lock passed full native-import/tensor and canonical checks: 12 tests,
+zero failures/skips, 72.40 seconds. Original failing runtime/environment remain retained.
 
 Execution capacity: resumed free-RAM samples were 5.09, 5.80, 5.67, 5.17, 5.23 and
-4.68 GiB, all below the approved >=6 GiB setup threshold. Download/extraction/new-venv
-creation has therefore not begun. Approval remains valid; no further recovery approval
-is needed when host capacity is available. The private containment/hash-check extraction
-script is prepared under .local/ and the original interpreter/environment are untouched.
+4.68 GiB, initially below the approved >=6 GiB setup threshold. A later recheck reached
+6.01 GiB RAM and 83.71 GiB disk free; the already-approved recovery then began and passed.
+The private containment/hash-check extraction script is under
+.local/ and the original interpreter/environment remain untouched.
 
 ## Observation
 

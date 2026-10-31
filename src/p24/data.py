@@ -177,8 +177,15 @@ def write_freeze(study: FrozenStudy, root: Path) -> Path:
 
 def read_split(freeze: Path, name: str) -> PreparedSplit:
     manifest = read_json(freeze / "manifest.json")
+    payload = {
+        "splits": [manifest["splits"][n] for n in ("train", "validation", "test")],
+        "audit": manifest["audit"],
+    }
+    if digest_bytes(canonical(payload)) != manifest["identity"]:
+        raise PreparationError("Frozen metadata identity mismatch")
     path = freeze / f"{name}.json"
-    if digest_file(path) != manifest["files"][path.name]:
+    actual = digest_file(path)
+    if actual != manifest["files"][path.name] or actual != manifest["splits"][name]["rows_digest"]:
         raise PreparationError("Frozen rows digest mismatch")
     rows = tuple(Row(**r) for r in read_json(path))
     return PreparedSplit(rows, manifest["splits"][name])

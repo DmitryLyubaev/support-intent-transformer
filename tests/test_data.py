@@ -81,3 +81,30 @@ def test_actual_config_rejects_fixture_overrides(tmp_path):
     path.write_text('{"cap": 8}', encoding="utf-8")
     with pytest.raises(ValueError, match="approved"):
         read_config(path)
+
+
+def test_changed_freeze_metadata_is_rejected(tmp_path, rows, config):
+    import json
+
+    freeze = write_freeze(prepare(rows, config, {}), tmp_path)
+    path = freeze / "manifest.json"
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    manifest["splits"]["train"]["counts"][LABELS[0]] = 999
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(PreparationError, match="identity"):
+        read_training(freeze)
+
+
+def test_changed_rows_and_file_digest_cannot_bypass_freeze_identity(tmp_path, rows, config):
+    import hashlib
+    import json
+
+    freeze = write_freeze(prepare(rows, config, {}), tmp_path)
+    path = freeze / "train.json"
+    path.write_text("[]", encoding="utf-8")
+    manifest_path = freeze / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["files"]["train.json"] = hashlib.sha256(b"[]").hexdigest()
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(PreparationError, match="digest"):
+        read_training(freeze)
